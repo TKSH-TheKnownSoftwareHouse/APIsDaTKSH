@@ -56,7 +56,12 @@ namespace APIsDaTKSH.Controllers
             {
                 mailMessage.From = new MailAddress(_configuration["EmailSettings:SenderEmail"]);
                 mailMessage.Subject = "New contact form";
-                mailMessage.To.Add(contactForm.Email);
+                var recipientsEmails = _configuration.GetSection("EmailSettings:ReceiverEmails").Get<List<string>>();
+
+                foreach (var receiverEmail in recipientsEmails)
+                {
+                    mailMessage.To.Add(receiverEmail);
+                }
                 mailMessage.Body = $"FullName: {contactForm.FullName}\nEmail: {contactForm.Email}\nMessage: {contactForm.Message}";
 
                 smtpClient.Credentials = new NetworkCredential(
@@ -66,7 +71,13 @@ namespace APIsDaTKSH.Controllers
                 smtpClient.EnableSsl = true;
                 smtpClient.Port = int.Parse(_configuration["EmailSettings:SmtpPort"]);
 
+                _logger.LogInformation($"SMTP Server: {_configuration["EmailSettings:SmtpServer"]}");
+                _logger.LogInformation($"Sender Email: {_configuration["EmailSettings:SenderEmail"]}");
+                _logger.LogInformation($"Receiver Emails: {string.Join(", ", recipientsEmails)}");
                 await smtpClient.SendMailAsync(mailMessage).ConfigureAwait(false);
+
+
+
             }
         }
     }
