@@ -13,6 +13,6 @@ namespace APIsDaTKSH.Models
         [Required(ErrorMessage = "Password is required.")]
         [StringLength(255, ErrorMessage = "Password cannot exceed 255 characters.")]
         [Column("password_hash")]
-        public string Password { get; set; }
+        public string PasswordHash { get; set; }
     }
 }

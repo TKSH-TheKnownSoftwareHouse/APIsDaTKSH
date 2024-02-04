@@ -1,5 +1,6 @@
 ﻿// APIsDaTKSH.Controllers.HeroController
 using APIsDaTKSH.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -24,19 +25,27 @@ namespace APIsDaTKSH.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> Post([FromBody] HeroModel hero)
         {
             try
             {
-                if (!ModelState.IsValid)
+                var isAdminClaim = User.FindFirst("IsAdmin")?.Value;
+
+                if (bool.TryParse(isAdminClaim, out var isAdmin) && isAdmin)
                 {
-                    return BadRequest(ModelState);
+
+                    if (!ModelState.IsValid)
+                    {
+                        return BadRequest(ModelState);
+                    }
+
+                    _dbContext.Heroes.Add(hero);
+                    await _dbContext.SaveChangesAsync();
+
+                    return Ok("Hero information added successfully!");
                 }
-
-                _dbContext.Heroes.Add(hero);
-                await _dbContext.SaveChangesAsync();
-
-                return Ok("Hero information added successfully!");
+                return Forbid();
             }
             catch (Exception ex)
             {
@@ -81,23 +90,32 @@ namespace APIsDaTKSH.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<IActionResult> UpdateHero(int id, [FromBody] HeroModel updatedHero)
         {
             try
             {
-                var existingHero = _dbContext.Heroes.FirstOrDefault(h => h.id == id);
+                var isAdminClaim = User.FindFirst("IsAdmin")?.Value;
 
-                if (existingHero == null)
+                if (bool.TryParse(isAdminClaim, out var isAdmin) && isAdmin)
                 {
-                    return NotFound($"Hero with ID {id} not found.");
+
+                    var existingHero = _dbContext.Heroes.FirstOrDefault(h => h.id == id);
+
+                    if (existingHero == null)
+                    {
+                        return NotFound($"Hero with ID {id} not found.");
+                    }
+
+                    existingHero.MainMessage = updatedHero.MainMessage;
+                    existingHero.Subtitle = updatedHero.Subtitle;
+
+                    await _dbContext.SaveChangesAsync();
+
+                    return Ok($"Hero with ID {id} updated successfully.");
                 }
+                return Forbid();
 
-                existingHero.MainMessage = updatedHero.MainMessage;
-                existingHero.Subtitle = updatedHero.Subtitle;
-
-                await _dbContext.SaveChangesAsync();
-
-                return Ok($"Hero with ID {id} updated successfully.");
             }
             catch (Exception ex)
             {
@@ -107,11 +125,15 @@ namespace APIsDaTKSH.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteHero(int id)
         {
             try
             {
-                var heroToDelete = _dbContext.Heroes.FirstOrDefault(h => h.id == id);
+                var isAdminClaim = User.FindFirst("IsAdmin")?.Value;
+
+                if (bool.TryParse(isAdminClaim, out var isAdmin) && isAdmin) { 
+                    var heroToDelete = _dbContext.Heroes.FirstOrDefault(h => h.id == id);
 
                 if (heroToDelete == null)
                 {
@@ -122,6 +144,9 @@ namespace APIsDaTKSH.Controllers
                 await _dbContext.SaveChangesAsync();
 
                 return Ok($"Hero with ID {id} deleted successfully.");
+                }
+                return Forbid();
+
             }
             catch (Exception ex)
             {

@@ -22,8 +22,18 @@ namespace APIsDaTKSH.Models
         [Required(ErrorMessage = "Password is required.")]
         [StringLength(255, ErrorMessage = "Password cannot exceed 255 characters.")]
         [Column("password_hash")]
-        public string Password { get; set; }
+        public string PasswordHash { get; set; }
 
+        public void HashPassword()
+        {
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(PasswordHash);
+        }
+
+
+        public bool VerifyPassword(string password)
+        {
+            return BCrypt.Net.BCrypt.Verify(password, PasswordHash);
+        }
         [Column("is_admin")]
         public bool IsAdmin { get; set; }
     }

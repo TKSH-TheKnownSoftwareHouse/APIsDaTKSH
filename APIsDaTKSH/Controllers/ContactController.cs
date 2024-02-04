@@ -1,5 +1,7 @@
 using APIsDaTKSH.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.KeyVault.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -31,12 +33,12 @@ namespace APIsDaTKSH.Controllers
         {
             try
             {
+
                 if (!ModelState.IsValid)
                 {
                     return BadRequest(ModelState);
                 }
 
-                // Adiciona as informações ao banco de dados
                 var contactEntity = new ContactModel
                 {
                     id = contactForm.id,
@@ -64,33 +66,55 @@ namespace APIsDaTKSH.Controllers
             }
         }
         [HttpGet]
+        [Authorize]
         public IActionResult GetAllContacts()
         {
-            var contacts = _dbContext.Contacts.ToList();
-            if (contacts == null)
-            {
-                return NotFound($"Contacts not found.");
-            }
+            var isAdminClaim = User.FindFirst("IsAdmin")?.Value;
 
-            return Ok(contacts);
+            if (bool.TryParse(isAdminClaim, out var isAdmin) && isAdmin)
+            {
+                var contacts = _dbContext.Contacts.ToList();
+                if (contacts == null)
+                {
+                    return NotFound($"Contacts not found.");
+                }
+                return Ok(contacts);
+            }
+            return Forbid();
+
         }
 
         [HttpGet("{id}")]
+        [Authorize]
+
         public IActionResult GetContactById(int id)
         {
-            var contact = _dbContext.Contacts.FirstOrDefault(c => c.id == id);
+            var isAdminClaim = User.FindFirst("IsAdmin")?.Value;
 
-            if (contact == null)
+            if (bool.TryParse(isAdminClaim, out var isAdmin) && isAdmin)
             {
-                return NotFound($"Contact with ID {id} not found.");
-            }
+                var contact = _dbContext.Contacts.FirstOrDefault(c => c.id == id);
 
-            return Ok(contact);
+                if (contact == null)
+                {
+                    return NotFound($"Contact with ID {id} not found.");
+                }
+
+                return Ok(contact);
+            }
+            return Forbid();
+
         }
         [HttpPut("{id}")]
+        [Authorize]
+
         public async Task<IActionResult> UpdateContact(int id, [FromBody] ContactModel updatedContact)
         {
-            var existingContact = _dbContext.Contacts.FirstOrDefault(c => c.id == id);
+            var isAdminClaim = User.FindFirst("IsAdmin")?.Value;
+
+            if (bool.TryParse(isAdminClaim, out var isAdmin) && isAdmin)
+            {
+                var existingContact = _dbContext.Contacts.FirstOrDefault(c => c.id == id);
 
             if (existingContact == null)
             {
@@ -104,22 +128,33 @@ namespace APIsDaTKSH.Controllers
             await _dbContext.SaveChangesAsync();
 
             return Ok($"Contact with ID {id} updated successfully.");
+            }
+            return Forbid();
         }
 
         [HttpDelete("{id}")]
+        [Authorize]
+
         public async Task<IActionResult> DeleteContact(int id)
         {
-            var contactToDelete = _dbContext.Contacts.FirstOrDefault(c => c.id == id);
+            var isAdminClaim = User.FindFirst("IsAdmin")?.Value;
 
-            if (contactToDelete == null)
+            if (bool.TryParse(isAdminClaim, out var isAdmin) && isAdmin)
             {
-                return NotFound($"Contact with ID {id} not found.");
+                var contactToDelete = _dbContext.Contacts.FirstOrDefault(c => c.id == id);
+
+                if (contactToDelete == null)
+                {
+                    return NotFound($"Contact with ID {id} not found.");
+                }
+
+                _dbContext.Contacts.Remove(contactToDelete);
+                await _dbContext.SaveChangesAsync();
+
+                return Ok($"Contact with ID {id} deleted successfully.");
             }
+            return Forbid();
 
-            _dbContext.Contacts.Remove(contactToDelete);
-            await _dbContext.SaveChangesAsync();
-
-            return Ok($"Contact with ID {id} deleted successfully.");
         }
         private async Task SendEmail(ContactModel contactForm)
         {

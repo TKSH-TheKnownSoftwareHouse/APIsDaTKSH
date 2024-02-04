@@ -1,6 +1,8 @@
-﻿using APIsDaTKSH.Models;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
+using System.Threading.Tasks;
+using APIsDaTKSH.Models;
+using Microsoft.EntityFrameworkCore;
+using static AuthController;
 
 public class UserService
 {
@@ -11,29 +13,47 @@ public class UserService
         _dbContext = dbContext;
     }
 
-    public void RegisterUser(RegisterModel model)
+    public async Task RegisterUserAsync(RegisterModel model)
     {
-        if (_dbContext.Users.Any(u => u.Email == model.Email))
+        if (await _dbContext.Users.AnyAsync(u => u.Email == model.Email))
         {
-            throw new ApplicationException("E-mail já registrado.");
+            throw new InvalidOperationException("Email already registered.");
+        }
+        model.HashPassword();
+        _dbContext.Users.Add(model);
+        await _dbContext.SaveChangesAsync();
+    }
+    public async Task<bool> DeleteUserAsync(int userId)
+    {
+        var user = await _dbContext.Users.FindAsync(userId);
+
+        if (user != null)
+        {
+            _dbContext.Users.Remove(user);
+            await _dbContext.SaveChangesAsync();
+            return true;
         }
 
-        var newUser = new RegisterModel
-        {
-            Name = model.Name,
-            Email = model.Email,
-            Password = model.Password,
-            IsAdmin = model.IsAdmin
-        };
-
-        _dbContext.Users.Add(newUser);
-        _dbContext.SaveChanges();
+        return false;
     }
-
-    public RegisterModel ValidateUser(string email, string password)
+    public IEnumerable<RegisterModel> GetAllUsers()
     {
-        var user = _dbContext.Users.FirstOrDefault(u => u.Email == email && u.Password == password);
-
-        return user;
+        return _dbContext.Users.ToList();
     }
-}
+    public RegisterModel GetUserById(int userId)
+    {
+        return _dbContext.Users.Find(userId);
+    }
+    public async Task<(RegisterModel user, bool isAdmin)> ValidateUserAsync(string email, string password)
+        {
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+            if (user != null && !string.IsNullOrEmpty(password) && user.VerifyPassword(password))
+            {
+                return (user, user.IsAdmin);
+            }
+
+            return (null, false);
+        }
+
+ }

@@ -1,4 +1,5 @@
 ﻿using APIsDaTKSH.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -22,19 +23,27 @@ namespace APIsDaTKSH.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> Post([FromBody] DepositionModel deposition)
         {
             try
             {
-                if (!ModelState.IsValid)
+                var isAdminClaim = User.FindFirst("IsAdmin")?.Value;
+
+                if (bool.TryParse(isAdminClaim, out var isAdmin) && isAdmin)
                 {
-                    return BadRequest(ModelState);
+                    if (!ModelState.IsValid)
+                    {
+                        return BadRequest(ModelState);
+                    }
+
+                    _dbContext.Depositions.Add(deposition);
+                    await _dbContext.SaveChangesAsync();
+
+                    return Ok("Deposition information added successfully!");
                 }
+                return Forbid();
 
-                _dbContext.Depositions.Add(deposition);
-                await _dbContext.SaveChangesAsync();
-
-                return Ok("Deposition information added successfully!");
             }
             catch (Exception ex)
             {
@@ -51,6 +60,7 @@ namespace APIsDaTKSH.Controllers
                 var depositions = _dbContext.Depositions.ToList();
                 return Ok(depositions);
             }
+
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Internal error: {ex.Message}");
@@ -80,25 +90,34 @@ namespace APIsDaTKSH.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize]
+
         public async Task<IActionResult> UpdateDeposition(int id, [FromBody] DepositionModel updatedDeposition)
         {
             try
             {
-                var existingDeposition = _dbContext.Depositions.FirstOrDefault(d => d.id == id);
+                var isAdminClaim = User.FindFirst("IsAdmin")?.Value;
 
-                if (existingDeposition == null)
+                if (bool.TryParse(isAdminClaim, out var isAdmin) && isAdmin)
                 {
-                    return NotFound($"Deposition with ID {id} not found.");
+                    var existingDeposition = _dbContext.Depositions.FirstOrDefault(d => d.id == id);
+
+                    if (existingDeposition == null)
+                    {
+                        return NotFound($"Deposition with ID {id} not found.");
+                    }
+
+                    existingDeposition.Author = updatedDeposition.Author;
+                    existingDeposition.MainMessage = updatedDeposition.MainMessage;
+                    existingDeposition.Subtitle = updatedDeposition.Subtitle;
+                    existingDeposition.Rating = updatedDeposition.Rating;
+
+                    await _dbContext.SaveChangesAsync();
+
+                    return Ok($"Deposition with ID {id} updated successfully.");
                 }
+                return Forbid();
 
-                existingDeposition.Author = updatedDeposition.Author;
-                existingDeposition.MainMessage = updatedDeposition.MainMessage;
-                existingDeposition.Subtitle = updatedDeposition.Subtitle;
-                existingDeposition.Rating = updatedDeposition.Rating;
-
-                await _dbContext.SaveChangesAsync();
-
-                return Ok($"Deposition with ID {id} updated successfully.");
             }
             catch (Exception ex)
             {
@@ -108,21 +127,29 @@ namespace APIsDaTKSH.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteDeposition(int id)
         {
             try
             {
-                var depositionToDelete = _dbContext.Depositions.FirstOrDefault(d => d.id == id);
+                var isAdminClaim = User.FindFirst("IsAdmin")?.Value;
 
-                if (depositionToDelete == null)
+                if (bool.TryParse(isAdminClaim, out var isAdmin) && isAdmin)
                 {
-                    return NotFound($"Deposition with ID {id} not found.");
+                    var depositionToDelete = _dbContext.Depositions.FirstOrDefault(d => d.id == id);
+
+                    if (depositionToDelete == null)
+                    {
+                        return NotFound($"Deposition with ID {id} not found.");
+                    }
+
+                    _dbContext.Depositions.Remove(depositionToDelete);
+                    await _dbContext.SaveChangesAsync();
+
+                    return Ok($"Deposition with ID {id} deleted successfully.");
                 }
+                return Forbid();
 
-                _dbContext.Depositions.Remove(depositionToDelete);
-                await _dbContext.SaveChangesAsync();
-
-                return Ok($"Deposition with ID {id} deleted successfully.");
             }
             catch (Exception ex)
             {
