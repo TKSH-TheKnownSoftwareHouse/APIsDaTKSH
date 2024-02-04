@@ -6,15 +6,15 @@ namespace APIsDaTKSH.Models
     public class HeroModel
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)] // Indicates that the column is auto-incremented
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)] 
         public int id { get; set; }
 
         [Required(ErrorMessage = "The main message is required.")]
-        [Column("main_message")]  // Maps to the 'main_message' column in the database
+        [Column("main_message")] 
         public string MainMessage { get; set; }
 
         [Required(ErrorMessage = "The subtitle is required.")]
-        [Column("subtitle")]  // Maps to the 'subtitle' column in the database
+        [Column("subtitle")]  
         public string Subtitle { get; set; }
 
 

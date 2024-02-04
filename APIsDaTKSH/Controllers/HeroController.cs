@@ -33,7 +33,7 @@ namespace APIsDaTKSH.Controllers
                     return BadRequest(ModelState);
                 }
 
-                _dbContext.Hero.Add(hero);
+                _dbContext.Heroes.Add(hero);
                 await _dbContext.SaveChangesAsync();
 
                 return Ok("Hero information added successfully!");
@@ -50,7 +50,7 @@ namespace APIsDaTKSH.Controllers
         {
             try
             {
-                var heroes = _dbContext.Hero.ToList();
+                var heroes = _dbContext.Heroes.ToList();
                 return Ok(heroes);
             }
             catch (Exception ex)
@@ -64,7 +64,7 @@ namespace APIsDaTKSH.Controllers
         {
             try
             {
-                var hero = _dbContext.Hero.FirstOrDefault(h => h.id == id);
+                var hero = _dbContext.Heroes.FirstOrDefault(h => h.id == id);
 
                 if (hero == null)
                 {
@@ -85,7 +85,7 @@ namespace APIsDaTKSH.Controllers
         {
             try
             {
-                var existingHero = _dbContext.Hero.FirstOrDefault(h => h.id == id);
+                var existingHero = _dbContext.Heroes.FirstOrDefault(h => h.id == id);
 
                 if (existingHero == null)
                 {
@@ -111,14 +111,14 @@ namespace APIsDaTKSH.Controllers
         {
             try
             {
-                var heroToDelete = _dbContext.Hero.FirstOrDefault(h => h.id == id);
+                var heroToDelete = _dbContext.Heroes.FirstOrDefault(h => h.id == id);
 
                 if (heroToDelete == null)
                 {
                     return NotFound($"Hero with ID {id} not found.");
                 }
 
-                _dbContext.Hero.Remove(heroToDelete);
+                _dbContext.Heroes.Remove(heroToDelete);
                 await _dbContext.SaveChangesAsync();
 
                 return Ok($"Hero with ID {id} deleted successfully.");

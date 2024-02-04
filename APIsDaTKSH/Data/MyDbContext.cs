@@ -9,17 +9,17 @@ public class MyDbContext : DbContext
     {
     }
     public DbSet<ContactModel> Contacts { get; set; }
-    public DbSet<HeroModel> Hero { get; set; }
+    public DbSet<HeroModel> Heroes { get; set; }
     public DbSet<DepositionModel> Depositions { get; set; }
-
+    public DbSet<RegisterModel> Users { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.Entity<DepositionModel>().ToTable("contact");
-        modelBuilder.Entity<ContactModel>().ToTable("contact");
-        modelBuilder.Entity<HeroModel>().ToTable("hero");
+        modelBuilder.Entity<DepositionModel>().ToTable("depositions");
+        modelBuilder.Entity<ContactModel>().ToTable("contacts");
+        modelBuilder.Entity<HeroModel>().ToTable("heroes");
+        modelBuilder.Entity<RegisterModel>().ToTable("users");
 
-        // Log to check if the mapping is correct
         Console.WriteLine("Model created: " + modelBuilder.Model);
     }
 
